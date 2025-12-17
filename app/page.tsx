@@ -1,6 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import { Progress } from "@/components/ui/progress"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
   Card,
   CardContent,
@@ -18,7 +30,7 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Trash2, Plus, RotateCcw, GraduationCap } from "lucide-react"
+import { Trash2, X } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 type Subject = {
@@ -55,13 +67,16 @@ function getGrade(marks: number): Grade {
 export default function GradeCalculator() {
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [mounted, setMounted] = useState(false)
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
     setMounted(true)
     try {
       const stored = localStorage.getItem("grade-calculator-data")
       if (stored) {
-        setSubjects(JSON.parse(stored))
+        const parsedSubjects = JSON.parse(stored)
+        setSubjects(parsedSubjects)
+        inputRefs.current = inputRefs.current.slice(0, parsedSubjects.length * 3)
       } else {
         setSubjects([
           { id: crypto.randomUUID(), name: "", credits: 4, marks: "" },
@@ -104,10 +119,14 @@ export default function GradeCalculator() {
   })()
 
   const addSubject = () => {
-    setSubjects([
-      ...subjects,
-      { id: crypto.randomUUID(), name: "", credits: 4, marks: "" },
-    ])
+    const newSubject = { id: crypto.randomUUID(), name: "", credits: 4, marks: "" }
+    setSubjects([...subjects, newSubject])
+    setTimeout(() => {
+      const nextInput = inputRefs.current[subjects.length * 3]
+      if (nextInput) {
+        nextInput.focus()
+      }
+    }, 0)
   }
 
   const removeSubject = (id: string) => {
@@ -141,254 +160,522 @@ export default function GradeCalculator() {
     )
   }
 
-  const resetAll = () => {
-    if (
-      confirm("Are you sure you want to reset all data? This cannot be undone.")
-    ) {
-      setSubjects([{ id: crypto.randomUUID(), name: "", credits: 4, marks: "" }])
-      localStorage.removeItem("grade-calculator-data")
+  const clearSubject = (id: string) => {
+
+      setSubjects(
+
+        subjects.map((s) => {
+
+          if (s.id === id) {
+
+            return { ...s, name: "", marks: "" }
+
+          }
+
+          return s
+
+        }),
+
+      )
+
     }
-  }
 
-  if (!mounted) {
+  
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+
+      if (e.key === 'Enter') {
+
+        e.preventDefault()
+
+        if(index === subjects.length - 1){
+
+          addSubject()
+
+        } else {
+
+          const nextInput = inputRefs.current[(index + 1) * 3]
+
+          if (nextInput) {
+
+            nextInput.focus()
+
+          }
+
+        }
+
+      }
+
+    }
+
+  
+
+    
+
+  
+
+    if (!mounted) {
+
+      return (
+
+        <div className="min-h-screen bg-background flex items-center justify-center">
+
+        </div>
+
+      )
+
+    }
+
+  
+
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <GraduationCap className="w-16 h-16 animate-spin text-primary" />
+
+      <div className="min-h-screen bg-background text-foreground">
+
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+
+          <header className="text-center mb-8">
+
+            <div className="flex items-center justify-center gap-3">
+
+              <h1 className="text-4xl font-bold">Grade Calculator</h1>
+
+            </div>
+
+            <p className="text-muted-foreground mt-2">
+
+              Calculate your Semester Grade Point Average (SGPA) with ease.
+
+            </p>
+
+          </header>
+
+  
+
+          <section className="mb-8">
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+              <Card className="shadow-soft">
+
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+
+                  <CardTitle className="text-sm font-medium">SGPA</CardTitle>
+
+                </CardHeader>
+
+                <CardContent>
+
+                                  <div className="text-2xl font-bold">{sgpa}</div>
+
+                                  <Progress value={Number(sgpa) * 10} className="mt-2" />
+
+                                </CardContent>
+
+              </Card>
+
+              <Card className="shadow-soft">
+
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+
+                                <CardTitle className="text-sm font-medium">Percentage</CardTitle>
+
+                              </CardHeader>
+
+                <CardContent>
+
+                  <div className="text-2xl font-bold">{percentage}%</div>
+
+                </CardContent>
+
+              </Card>
+
+              <Card className="shadow-soft">
+
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+
+                  <CardTitle className="text-sm font-medium">
+
+                    Total Credits
+
+                  </CardTitle>
+
+                </CardHeader>
+
+                <CardContent>
+
+                  <div className="text-2xl font-bold">{totalCredits}</div>
+
+                </CardContent>
+
+              </Card>
+
+            </div>
+
+          </section>
+
+  
+
+          <section className="my-8">
+
+            <Card className="shadow-soft">
+
+              <CardHeader>
+
+                <CardTitle>Subjects</CardTitle>
+
+                                <CardDescription>
+
+                                  Calculate your grades with precision.
+
+                                </CardDescription>
+
+                              </CardHeader>
+
+              <CardContent>
+
+                <div className="overflow-x-auto">
+
+                  <Table>
+
+                    <TableHeader>
+
+                      <TableRow>
+
+                        <TableHead className="w-[40%]">Subject Name</TableHead>
+
+                        <TableHead>Credits</TableHead>
+
+                        <TableHead>Marks (0-100)</TableHead>
+
+                        <TableHead>Grade</TableHead>
+
+                        <TableHead className="text-right">Action</TableHead>
+
+                      </TableRow>
+
+                    </TableHeader>
+
+                    <TableBody>
+
+                      {subjects.map((subject, index) => {
+
+                        const grade =
+
+                          typeof subject.marks === "number"
+
+                            ? getGrade(subject.marks)
+
+                            : null
+
+                        return (
+
+                          <TableRow key={subject.id}>
+
+                            <TableCell>
+
+                              <Input
+
+                                ref={(el) => (inputRefs.current[index * 3] = el)}
+
+                                type="text"
+
+                                placeholder="e.g., Artificial Intelligence"
+
+                                value={subject.name}
+
+                                onChange={(e) =>
+
+                                  updateSubject(subject.id, "name", e.target.value)
+
+                                }
+
+                              />
+
+                            </TableCell>
+
+                            <TableCell>
+
+                              <Input
+
+                                ref={(el) => (inputRefs.current[index * 3 + 1] = el)}
+
+                                type="number"
+
+                                min="0"
+
+                                value={subject.credits}
+
+                                onChange={(e) =>
+
+                                  updateSubject(
+
+                                    subject.id,
+
+                                    "credits",
+
+                                    e.target.value,
+
+                                  )
+
+                                }
+
+                              />
+
+                            </TableCell>
+
+                            <TableCell>
+
+                              <Input
+
+                                ref={(el) => (inputRefs.current[index * 3 + 2] = el)}
+
+                                type="number"
+
+                                min="0"
+
+                                max="100"
+
+                                placeholder="0-100"
+
+                                value={subject.marks}
+
+                                onChange={(e) =>
+
+                                  updateSubject(subject.id, "marks", e.target.value)
+
+                                }
+
+                                onKeyDown={(e) => handleKeyDown(e, index)}
+
+                              />
+
+                            </TableCell>
+
+                            <TableCell>
+
+                              {grade ? (
+
+                                <Badge className={grade.color}>
+
+                                  {grade.letter}
+
+                                </Badge>
+
+                              ) : (
+
+                                "-"
+
+                              )}
+
+                            </TableCell>
+
+                            <TableCell className="text-right">
+
+                              <Button
+
+                                variant="ghost"
+
+                                size="icon"
+
+                                onClick={() => clearSubject(subject.id)}
+
+                              >
+
+                                <X className="w-4 h-4" />
+
+                              </Button>
+
+                              <Button
+
+                                variant="ghost"
+
+                                size="icon"
+
+                                onClick={() => removeSubject(subject.id)}
+
+                                disabled={subjects.length <= 1}
+
+                              >
+
+                                <Trash2 className="w-4 h-4" />
+
+                              </Button>
+
+                            </TableCell>
+
+                          </TableRow>
+
+                        )
+
+                      })}
+
+                    </TableBody>
+
+                  </Table>
+
+                </div>
+
+                <div className="flex items-center justify-end mt-4 gap-2">
+
+                  <Button onClick={addSubject} variant="outline">
+
+                    Add Subject
+
+                  </Button>
+
+                  <AlertDialog>
+
+                                    <AlertDialogTrigger asChild>
+
+                                      <Button
+
+                                        variant="destructive"
+
+                                        disabled={subjects.length === 1 && subjects[0].name === "" && subjects[0].marks === ""}
+
+                                      >
+
+                                        Reset All
+
+                                      </Button>
+
+                                    </AlertDialogTrigger>
+
+                                    <AlertDialogContent>
+
+                                      <AlertDialogHeader>
+
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+
+                                        <AlertDialogDescription>
+
+                                          This action cannot be undone. This will permanently delete all your data.
+
+                                        </AlertDialogDescription>
+
+                                      </AlertDialogHeader>
+
+                                      <AlertDialogFooter>
+
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+
+                                        <AlertDialogAction onClick={() => {
+
+                                          setSubjects([{ id: crypto.randomUUID(), name: "", credits: 4, marks: "" }])
+
+                                          localStorage.removeItem("grade-calculator-data")
+
+                                        }}>Continue</AlertDialogAction>
+
+                                      </AlertDialogFooter>
+
+                                    </AlertDialogContent>
+
+                                  </AlertDialog>
+
+                </div>
+
+              </CardContent>
+
+            </Card>
+
+          </section>
+
+  
+
+          <footer className="text-center mt-8 text-sm text-muted-foreground">
+
+            <Card className="shadow-soft">
+
+              <CardHeader>
+
+                <CardTitle className="text-lg">Grading Scale</CardTitle>
+
+              </CardHeader>
+
+              <CardContent>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+
+                  <div className="flex items-center gap-2">
+
+                    <Badge className="bg-chart-4 text-background">O</Badge>
+
+                    <span>90-100</span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2">
+
+                    <Badge className="bg-chart-2 text-background">A+</Badge>
+
+                    <span>80-89</span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2">
+
+                    <Badge className="bg-chart-1 text-background">A</Badge>
+
+                    <span>70-79</span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2">
+
+                    <Badge className="bg-chart-3 text-background">B+</Badge>
+
+                    <span>60-69</span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2">
+
+                    <Badge className="bg-chart-5 text-background">B</Badge>
+
+                    <span>50-59</span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2">
+
+                    <Badge className="bg-destructive text-destructive-foreground">C</Badge>
+
+                    <span>40-49</span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2">
+
+                    <Badge className="bg-muted text-muted-foreground">P</Badge>
+
+                    <span>35-39</span>
+
+                  </div>
+
+                  <div className="flex items-center gap-2">
+
+                    <Badge className="bg-destructive text-destructive-foreground">F</Badge>
+
+                    <span>Below 35</span>
+
+                  </div>
+
+                </div>
+
+              </CardContent>
+
+            </Card>
+
+          </footer>
+
+        </div>
+
       </div>
+
     )
+
   }
 
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <header className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3">
-            <GraduationCap className="w-10 h-10 text-primary" />
-            <h1 className="text-4xl font-bold">Grade Calculator</h1>
-          </div>
-          <p className="text-muted-foreground mt-2">
-            Calculate your Semester Grade Point Average (SGPA) with ease.
-          </p>
-        </header>
-
-        <section className="mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">SGPA</CardTitle>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  className="h-4 w-4 text-muted-foreground"
-                >
-                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                </svg>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{sgpa}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Percentage</CardTitle>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  className="h-4 w-4 text-muted-foreground"
-                >
-                  <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-                </svg>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{percentage}%</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Credits
-                </CardTitle>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  className="h-4 w-4 text-muted-foreground"
->
-                  <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                </svg>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalCredits}</div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        <section>
-          <Card>
-            <CardHeader>
-              <CardTitle>Subjects</CardTitle>
-              <CardDescription>
-                Enter your subjects and marks to see the magic.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[40%]">Subject Name</TableHead>
-                      <TableHead>Credits</TableHead>
-                      <TableHead>Marks (0-100)</TableHead>
-                      <TableHead>Grade</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subjects.map((subject) => {
-                      const grade =
-                        typeof subject.marks === "number"
-                          ? getGrade(subject.marks)
-                          : null
-                      return (
-                        <TableRow key={subject.id}>
-                          <TableCell>
-                            <Input
-                              type="text"
-                              placeholder="e.g., Artificial Intelligence"
-                              value={subject.name}
-                              onChange={(e) =>
-                                updateSubject(subject.id, "name", e.target.value)
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={subject.credits}
-                              onChange={(e) =>
-                                updateSubject(
-                                  subject.id,
-                                  "credits",
-                                  e.target.value,
-                                )
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="100"
-                              placeholder="0-100"
-                              value={subject.marks}
-                              onChange={(e) =>
-                                updateSubject(subject.id, "marks", e.target.value)
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>
-                            {grade ? (
-                              <Badge className={grade.color}>
-                                {grade.letter}
-                              </Badge>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeSubject(subject.id)}
-                              disabled={subjects.length <= 1}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="flex items-center justify-between mt-4">
-                <Button onClick={addSubject} variant="outline">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Subject
-                </Button>
-                <Button
-                  onClick={resetAll}
-                  variant="destructive"
-                  disabled={subjects.length === 1 && subjects[0].name === "" && subjects[0].marks === ""}
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset All
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        <footer className="text-center mt-8 text-sm text-muted-foreground">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Grading Scale</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-chart-4 text-background">O</Badge>
-                  <span>90-100</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-chart-2 text-background">A+</Badge>
-                  <span>80-89</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-chart-1 text-background">A</Badge>
-                  <span>70-79</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-chart-3 text-background">B+</Badge>
-                  <span>60-69</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-chart-5 text-background">B</Badge>
-                  <span>50-59</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-destructive text-destructive-foreground">C</Badge>
-                  <span>40-49</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-muted text-muted-foreground">P</Badge>
-                  <span>35-39</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-destructive text-destructive-foreground">F</Badge>
-                  <span>Below 35</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </footer>
-      </div>
-    </div>
-  )
-}
+  
